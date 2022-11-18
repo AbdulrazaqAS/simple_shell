@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "shell.h"
 
 void execute(void);
 
@@ -11,7 +12,6 @@ char *av[100];
 pid_t child_pid;
 int wstatus;
 char *file;
-extern char **environ;
 
 /**
  * main - entry
@@ -25,6 +25,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 	size_t len = 0;
 	ssize_t count;
 	char *buf = NULL;
+	unsigned int i;
 
 	file = argv[0];
 	do {
@@ -32,7 +33,12 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 		if (count != -1)
 		{
-			av[0] = strtok(buf, " \n");
+			for (i = 0; ; buf = NULL, i++)
+			{
+				av[i] = strtok(buf, " \n");
+				if (av[i] == NULL)
+					break;
+			}
 			execute();
 		}
 	} while (count != -1);
