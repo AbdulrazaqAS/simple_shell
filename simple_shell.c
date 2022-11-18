@@ -12,6 +12,13 @@ pid_t child_pid;
 int wstatus;
 char *file;
 
+/**
+ * main - entry point
+ * @argc: arg count
+ * @argv: arg vector
+ *
+ * Return: 0 or -1
+ */
 int main(int argc, char **argv)
 {
 	size_t len = 0;
@@ -39,6 +46,10 @@ int main(int argc, char **argv)
 	return (0);
 }
 
+/**
+ * execute - exec the required command
+ * @buf: cmd name
+ */
 void execute(char *buf)
 {
 	child_pid = fork();
