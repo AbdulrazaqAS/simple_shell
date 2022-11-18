@@ -5,9 +5,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-void execute(char *);
+void execute(void);
 
-char *av[] = {NULL, NULL};
+char *av[100];
 __attribute__((unused))char *env[] = {"USER=abdulrazaq", "LOGNAME=abdulrazaq",
 	"HOME=/simple_shell", NULL};
 pid_t child_pid;
@@ -22,22 +22,26 @@ extern char **environ;
  *
  * Return: 0 or -1
  */
-int main(int argc, char *argv[])
+int main(__attribute__((unused))int argc, char *argv[])
 {
 	size_t len = 0;
 	ssize_t count;
 	char *buf = NULL;
+	unsigned int i;
 
 	file = argv[0];
-	argc++;
-	argc--;
-
 	do {
 		count = getline(&buf, &len, stdin);
 
 		if (count != -1)
 		{
-			execute(strtok(buf, " \n"));
+			for (i = 0; ; buf = NULL, i++)
+			{
+				av[i] = strtok(buf, " \n");
+				if (av[i] == NULL)
+					break;
+			}
+			execute();
 		}
 	} while (count != -1);
 
@@ -50,7 +54,7 @@ int main(int argc, char *argv[])
  * execute - exec a given command
  * @buf: command to exec
  */
-void execute(char *buf)
+void execute(void)
 {
 	child_pid = fork();
 	if (child_pid == -1)
@@ -61,7 +65,6 @@ void execute(char *buf)
 
 	if (child_pid == 0)
 	{
-		av[0] = buf;
 		execve(av[0], av, environ);
 		perror(file);
 		exit(EXIT_FAILURE);
