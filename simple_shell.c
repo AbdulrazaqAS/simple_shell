@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
 	argc--;
 
 	do {
-		printf("abdulrazaq$ ");
 		count = getline(&buf, &len, stdin);
 
 		if (count != -1)
@@ -41,8 +40,6 @@ int main(int argc, char *argv[])
 			execute(buf);
 		}
 	} while (count != -1);
-
-	putchar('\n');
 
 	free(buf);
 
