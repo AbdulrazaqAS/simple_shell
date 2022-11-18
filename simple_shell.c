@@ -10,7 +10,7 @@ char *av[] = {NULL, NULL};
 char *env[] = {"USER=abdulrazaq", "LOGNAME=abdulrazaq",
 	"HOME=/simple_shell", NULL};
 pid_t child_pid;
-imt wstatus;
+int wstatus;
 char *file;
 
 /**
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 		printf("abdulrazaq$ ");
 		count = getline(&buf, &len, stdin);
 
-		buf[count - 1] = '\n';
+		buf[count - 1] = '\0';
 		if (count != -1)
 			execute(buf);
 	} while (count != -1);
@@ -61,7 +61,7 @@ void execute(char *buf)
 
 	if (child_pid == 0)
 	{
-		av[0] - buf;
+		av[0] = buf;
 		execve(av[0], av, env);
 		perror(file);
 		exit(EXIT_FAILURE);
