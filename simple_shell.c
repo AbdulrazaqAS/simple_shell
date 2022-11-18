@@ -35,9 +35,11 @@ int main(int argc, char *argv[])
 		printf("abdulrazaq$ ");
 		count = getline(&buf, &len, stdin);
 
-		buf[count - 1] = '\0';
 		if (count != -1)
+		{
+			buf[count - 1] = '\0';
 			execute(buf);
+		}
 	} while (count != -1);
 
 	putchar('\n');
