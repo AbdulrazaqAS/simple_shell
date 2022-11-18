@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -36,8 +37,7 @@ int main(int argc, char *argv[])
 
 		if (count != -1)
 		{
-			buf[count - 1] = '\0';
-			execute(buf);
+			execute(strtok(buf, " \n"));
 		}
 	} while (count != -1);
 
