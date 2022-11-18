@@ -7,11 +7,12 @@
 void execute(char *);
 
 char *av[] = {NULL, NULL};
-char *env[] = {"USER=abdulrazaq", "LOGNAME=abdulrazaq",
+__attribute__((unused))char *env[] = {"USER=abdulrazaq", "LOGNAME=abdulrazaq",
 	"HOME=/simple_shell", NULL};
 pid_t child_pid;
 int wstatus;
 char *file;
+extern char **environ;
 
 /**
  * main - entry
@@ -62,7 +63,7 @@ void execute(char *buf)
 	if (child_pid == 0)
 	{
 		av[0] = buf;
-		execve(av[0], av, env);
+		execve(av[0], av, environ);
 		perror(file);
 		exit(EXIT_FAILURE);
 	}
