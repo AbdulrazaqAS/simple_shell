@@ -4,16 +4,14 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "shell.h"
 
 void execute(void);
 
 char *av[100];
-__attribute__((unused))char *env[] = {"USER=abdulrazaq", "LOGNAME=abdulrazaq",
-	"HOME=/simple_shell", NULL};
 pid_t child_pid;
 int wstatus;
 char *file;
-extern char **environ;
 
 /**
  * main - entry
@@ -52,7 +50,6 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 /**
  * execute - exec a given command
- * @buf: command to exec
  */
 void execute(void)
 {
