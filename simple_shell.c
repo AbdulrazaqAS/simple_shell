@@ -6,9 +6,8 @@
 #include <sys/wait.h>
 #include "shell.h"
 
-void execute(void);
+void execute(char *[]);
 
-char *av[100];
 pid_t child_pid;
 int wstatus;
 char *file;
@@ -22,6 +21,7 @@ char *file;
  */
 int main(__attribute__((unused))int argc, char *argv[])
 {
+	char *av[100];
 	size_t len = 0;
 	ssize_t count;
 	char *buf = NULL;
@@ -39,7 +39,8 @@ int main(__attribute__((unused))int argc, char *argv[])
 				if (av[i] == NULL)
 					break;
 			}
-			execute();
+
+			execute(av);
 		}
 	} while (count != -1);
 
@@ -51,7 +52,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 /**
  * execute - exec a given command
  */
-void execute(void)
+void execute(char *av[])
 {
 	child_pid = fork();
 	if (child_pid == -1)
