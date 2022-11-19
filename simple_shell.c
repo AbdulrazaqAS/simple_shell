@@ -41,9 +41,11 @@ int main(__attribute__((unused))int argc, char *argv[])
 			}
 
 			execute(av);
+			free(buf);
 		}
 	} while (count != -1);
 
+	free(av[0]);
 	free(buf);
 
 	return (0);
