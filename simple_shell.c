@@ -38,7 +38,8 @@ int main(__attribute__((unused))int argc, char *argv[])
 			av[3] = strtok(NULL, " \n\t");
 			av[4] = strtok(NULL, " \n\t");
 
-			execute(buf);
+			if (av[0])
+				execute(buf);
 		}
 	} while (count != -1);
 
@@ -63,6 +64,7 @@ void execute(char *buf)
 	{
 		free(buf);
 		execve(av[0], av, environ);
+		perror(file);
 		exit(EXIT_FAILURE);
 	}
 	else
