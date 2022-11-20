@@ -32,7 +32,12 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 		if (count != -1)
 		{
-			av[0] = strtok(buf, " \n");
+			av[0] = strtok(buf, " \n\t");
+			av[1] = strtok(NULL, " \n\t");
+			av[2] = strtok(NULL, " \n\t");
+			av[3] = strtok(NULL, " \n\t");
+			av[4] = strtok(NULL, " \n\t");
+
 			execute();
 		}
 	} while (count != -1);
