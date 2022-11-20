@@ -63,7 +63,6 @@ void execute(char *buf)
 	{
 		free(buf);
 		execve(av[0], av, environ);
-		perror(file);
 		exit(EXIT_FAILURE);
 	}
 	else
