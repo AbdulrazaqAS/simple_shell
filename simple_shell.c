@@ -25,6 +25,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 	size_t len = 0;
 	ssize_t count;
 	char *buf = NULL;
+	unsigned int i;
 
 	file = argv[0];
 	do {
@@ -32,14 +33,19 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 		if (count != -1)
 		{
-			av[0] = strtok(buf, " \n\t");
-			av[1] = strtok(NULL, " \n\t");
-			av[2] = strtok(NULL, " \n\t");
-			av[3] = strtok(NULL, " \n\t");
-			av[4] = strtok(NULL, " \n\t");
+			for (i = 0; ; buf = NULL, i++)
+			{
+				av[i] = strtok(buf, " \n\t");
+
+				if (av[i] == NULL)
+					break;
+			}
+
 
 			if (av[0])
 				execute(buf);
+
+			free(av[0]);
 		}
 	} while (count != -1);
 
