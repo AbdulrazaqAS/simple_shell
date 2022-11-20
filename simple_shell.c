@@ -62,7 +62,6 @@ void execute(void)
 	if (child_pid == 0)
 	{
 		execve(av[0], av, environ);
-		perror(file);
 		exit(EXIT_FAILURE);
 	}
 	else
