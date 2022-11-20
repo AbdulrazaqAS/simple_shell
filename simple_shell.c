@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-void execute(void);
+void execute(char *buf);
 
 char *av[100];
 pid_t child_pid;
@@ -38,7 +38,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 			av[3] = strtok(NULL, " \n\t");
 			av[4] = strtok(NULL, " \n\t");
 
-			execute();
+			execute(buf);
 		}
 	} while (count != -1);
 
@@ -50,7 +50,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 /**
  * execute - exec a given command
  */
-void execute(void)
+void execute(char *buf)
 {
 	child_pid = fork();
 	if (child_pid == -1)
@@ -61,7 +61,9 @@ void execute(void)
 
 	if (child_pid == 0)
 	{
+		free(buf);
 		execve(av[0], av, environ);
+		perror(file);
 		exit(EXIT_FAILURE);
 	}
 	else
