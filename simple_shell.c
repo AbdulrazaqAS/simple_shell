@@ -4,13 +4,14 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "shell.h"
 
-void execute(char *[]);
+void execute(void);
 
+char *av[100];
 pid_t child_pid;
 int wstatus;
 char *file;
+extern char **environ;
 
 /**
  * main - entry
@@ -21,11 +22,9 @@ char *file;
  */
 int main(__attribute__((unused))int argc, char *argv[])
 {
-	char *av[100];
 	size_t len = 0;
 	ssize_t count;
 	char *buf = NULL;
-	unsigned int i;
 
 	file = argv[0];
 	do {
@@ -33,19 +32,11 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 		if (count != -1)
 		{
-			for (i = 0; ; buf = NULL, i++)
-			{
-				av[i] = strtok(buf, " \n\t");
-				if (av[i] == NULL)
-					break;
-			}
-
-			execute(av);
-			free(buf);
+			av[0] = strtok(buf, " \n");
+			execute();
 		}
 	} while (count != -1);
 
-	free(av[0]);
 	free(buf);
 
 	return (0);
@@ -54,7 +45,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 /**
  * execute - exec a given command
  */
-void execute(char *av[])
+void execute(void)
 {
 	child_pid = fork();
 	if (child_pid == -1)
