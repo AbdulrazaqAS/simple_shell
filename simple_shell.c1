@@ -165,34 +165,36 @@ int search_path(char *cmd)
 		dir = opendir(path);
 		if (dir == NULL)
 		{
-			perror(arg1);
 			free(tmp_tmp2);
 			return (-1);
 		}
+		printf("Opened dir: %s\n", path);
 
 		do {
 			file = readdir(dir);
+			if (file != NULL)
+				printf("Opened file: %s\t", file->d_name);
 			if (file != NULL && strcmp(file->d_name, cmd) == 0)
 			{
 				strcat(path, "/");
 				strcat(path, cmd);
 				av[0] = path;
+				printf("\nFound it, cmd is now %s\n", av[0]);
 
 				cstatus = closedir(dir);
-				if (cstatus == -1)
-					perror(arg1);
 				free(tmp_tmp2);
+				perror(arg1);
 
 				return (0);
 			}
+			else
+				printf("and is not %s\n", cmd);
 		} while (file != NULL);
 
 		cstatus = closedir(dir);
+		perror(arg1);
 		if (cstatus == -1)
-		{
-			perror(arg1);
 			break;
-		}
 	}
 	free(tmp_tmp2);
 	return (-1);
