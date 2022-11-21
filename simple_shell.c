@@ -95,14 +95,17 @@ void execute(char *buf)
 int search_path(char *cmd)
 {
 	unsigned int i = 0;
-	char *path, *tmp, *paths, *tmp2;
+	char *path, *tmp, *tmp_tmp2, *paths, *tmp2;
 	struct dirent *file;
 	DIR *dir;
 	int cstatus;
 
 	paths = strdup(getenv("PATH"));
 	if (!paths)
+	{
+		free(paths);
 		return (-1);
+	}
 
 	/*
 	 * checking if the cmd starts with a '/'.
@@ -112,6 +115,7 @@ int search_path(char *cmd)
 	if (cmd[0] == '/')
 	{
 		tmp2 = strdup(cmd);
+		tmp_tmp2 = tmp2;
 		for (i = 0; ; tmp2 = NULL, i++)
 		{
 			path = strtok(tmp2, "/");
@@ -125,7 +129,11 @@ int search_path(char *cmd)
 				 * so we return -1.
 				 */
 				if (i < 2)
+				{
+					free(paths);
+					free(tmp_tmp2);
 					return (-1);
+				}
 				/*
 				 * Means the cmd is in '/bin/ls' format
 				 * NOTE: just using '/ls' and '/bin/ls'
@@ -143,9 +151,10 @@ int search_path(char *cmd)
 				 */
 				tmp = path;
 		}
-		free(tmp2);
+		free(tmp_tmp2);
 	}
 
+	tmp_tmp2 = paths;
 	for (i = 0; ; paths = NULL, i++)
 	{
 		path = strtok(paths, ":\n");
@@ -155,7 +164,10 @@ int search_path(char *cmd)
 
 		dir = opendir(path);
 		if (dir == NULL)
+		{
+			free(tmp_tmp2);
 			return (-1);
+		}
 		printf("Opened dir: %s\n", path);
 
 		do {
@@ -170,7 +182,7 @@ int search_path(char *cmd)
 				printf("\nFound it, cmd is now %s\n", av[0]);
 
 				cstatus = closedir(dir);
-				free(paths);
+				free(tmp_tmp2);
 				perror(arg1);
 
 				return (0);
@@ -184,6 +196,6 @@ int search_path(char *cmd)
 		if (cstatus == -1)
 			break;
 	}
-	free(paths);
+	free(tmp_tmp2);
 	return (-1);
 }
