@@ -2,16 +2,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include "shell.h"
+
+int search_path(char *cmd);
 void execute(char *buf);
 
 char *av[100];
 pid_t child_pid;
 int wstatus;
-char *file;
-extern char **environ;
+char *arg1;
 
 /**
  * main - entry
@@ -27,7 +30,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 	char *buf = NULL;
 	unsigned int i;
 
-	file = argv[0];
+	arg1 = argv[0];
 	do {
 		count = getline(&buf, &len, stdin);
 
@@ -45,7 +48,6 @@ int main(__attribute__((unused))int argc, char *argv[])
 			if (av[0])
 				execute(buf);
 
-			free(av[0]);
 		}
 	} while (count != -1);
 
@@ -56,13 +58,18 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 /**
  * execute - exec a given command
+ * @buf: buffer (from main getline func
+ * so that the child can free its own)
  */
 void execute(char *buf)
 {
+	if (search_path(av[0]) == -1)
+		return;
+
 	child_pid = fork();
 	if (child_pid == -1)
 	{
-		perror(file);
+		perror(arg1);
 		exit(EXIT_FAILURE);
 	}
 
@@ -70,11 +77,113 @@ void execute(char *buf)
 	{
 		free(buf);
 		execve(av[0], av, environ);
-		perror(file);
+		perror(arg1);
 		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		wait(&wstatus);
 	}
+}
+
+/**
+ * search_path - searches all path for cmd
+ * @cmd: command
+ *
+ * Return: 0 on success, else -1
+ */
+int search_path(char *cmd)
+{
+	unsigned int i = 0;
+	char *path, *tmp, *paths, *tmp2;
+	struct dirent *file;
+	DIR *dir;
+	int cstatus;
+
+	paths = strdup(getenv("PATH"));
+	if (!paths)
+		return (-1);
+
+	/*
+	 * checking if the cmd starts with a '/'.
+	 * First checking if it's like '/ls' which is
+	 * incorrect or '/bin/ls' which is correct.
+	 */
+	if (cmd[0] == '/')
+	{
+		tmp2 = strdup(cmd);
+		for (i = 0; ; tmp2 = NULL, i++)
+		{
+			path = strtok(tmp2, "/");
+			if (path == NULL)
+			{
+				/*
+				 * If we have only one token
+				 * i.e. i < 2 (bcoz loop 0 = token,
+				 * and loop 1 = NULL), then the cmd
+				 * is in '/ls' format which is incorect
+				 * so we return -1.
+				 */
+				if (i < 2)
+					return (-1);
+				/*
+				 * Means the cmd is in '/bin/ls' format
+				 * NOTE: just using '/ls' and '/bin/ls'
+				 * for example, it can be '/pwd'
+				 * and '/usr/bin/ls'
+				 */
+				cmd = tmp;
+				break;
+			}
+			else
+				/*
+				 * Saving path so that it can be used
+				 * in the next looping (i.e i++) when
+				 * path == NULL
+				 */
+				tmp = path;
+		}
+		free(tmp2);
+	}
+
+	for (i = 0; ; paths = NULL, i++)
+	{
+		path = strtok(paths, ":\n");
+
+		if (path == NULL)
+			break;
+
+		dir = opendir(path);
+		if (dir == NULL)
+			return (-1);
+		printf("Opened dir: %s\n", path);
+
+		do {
+			file = readdir(dir);
+			if (file != NULL)
+				printf("Opened file: %s\t", file->d_name);
+			if (file != NULL && strcmp(file->d_name, cmd) == 0)
+			{
+				strcat(path, "/");
+				strcat(path, cmd);
+				av[0] = path;
+				printf("\nFound it, cmd is now %s\n", av[0]);
+
+				cstatus = closedir(dir);
+				free(paths);
+				perror(arg1);
+
+				return (0);
+			}
+			else
+				printf("and is not %s\n", cmd);
+		} while (file != NULL);
+
+		cstatus = closedir(dir);
+		perror(arg1);
+		if (cstatus == -1)
+			break;
+	}
+	free(paths);
+	return (-1);
 }
