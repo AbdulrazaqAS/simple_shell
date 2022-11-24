@@ -47,6 +47,7 @@ int main(__attribute__((unused))int argc, char *argv[])
 
 			if (av[0])
 				execute(buf);
+			free(av[0]);
 
 		}
 	} while (count != -1);
@@ -176,7 +177,6 @@ int search_path(char *cmd)
 			{
 				strcat(path, "/");
 				strcat(path, cmd);
-				free(av[0]);
 				strcpy(av[0], path);
 
 				cstatus = closedir(dir);
