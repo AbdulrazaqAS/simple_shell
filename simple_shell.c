@@ -176,7 +176,8 @@ int search_path(char *cmd)
 			{
 				strcat(path, "/");
 				strcat(path, cmd);
-				av[0] = path;
+				free(av[0]);
+				strcpy(av[0], path);
 
 				cstatus = closedir(dir);
 				if (cstatus == -1)
