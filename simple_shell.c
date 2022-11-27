@@ -10,6 +10,10 @@
 
 int search_path(char *cmd);
 void execute(char *buf);
+char *expand_path(char *);
+int search_cmd_in_path(char *, char *);
+int search_cmd_in_all_paths(char *cmd, char *);
+int split_cmd_and_path(char *str, char cmd[], char path[]);
 
 char *av[100];
 pid_t child_pid;
@@ -64,9 +68,25 @@ int main(__attribute__((unused))int argc, char *argv[])
  */
 void execute(char *buf)
 {
-	if (search_path(av[0]) == -1)
+	int status;
+	char cmd[100], path[500];
+
+	if (split_cmd_and_path(av[0], cmd, path) == 0)
+	{
+		strcpy(cmd, av[0]);
+		status = search_cmd_in_all_paths(cmd, path);	
+	}
+	else
+	{
+		if (path[0] == '.' && (path[1] == '.' || path[1] == '/'))
+			expand_path(path);
+
+		status = search_cmd_in_path(cmd, path);	
+	}
+	if (status != 1)
 		return;
 
+	strcat(path, cmd);
 	child_pid = fork();
 	if (child_pid == -1)
 	{
@@ -77,7 +97,7 @@ void execute(char *buf)
 	if (child_pid == 0)
 	{
 		free(buf);
-		execve(av[0], av, environ);
+		execve(path, av, environ);
 		perror(arg1);
 		exit(EXIT_FAILURE);
 	}
@@ -88,15 +108,16 @@ void execute(char *buf)
 }
 
 /**
- * search_path - searches all path for cmd
+ * search_cmd_in_all_paths - searches for cmd in all paths
  * @cmd: command
+ * @buf: buffer to store the path
  *
- * Return: 0 on success, else -1
+ * Return: -1 if not present, else 1
  */
-int search_path(char *cmd)
+int search_cmd_in_all_paths(char *cmd, char *buf)
 {
 	unsigned int i = 0;
-	char *path, *tmp, *tmp_tmp2, *paths, *tmp2;
+	char *path, *tmp, *paths;
 	struct dirent *file;
 	DIR *dir;
 	int cstatus;
@@ -107,67 +128,18 @@ int search_path(char *cmd)
 		free(paths);
 		return (-1);
 	}
-
-	/*
-	 * checking if the cmd starts with a '/'.
-	 * First checking if it's like '/ls' which is
-	 * incorrect or '/bin/ls' which is correct.
-	 */
-	if (cmd[0] == '/')
-	{
-		tmp2 = strdup(cmd);
-		tmp_tmp2 = tmp2;
-		for (i = 0; ; tmp2 = NULL, i++)
-		{
-			path = strtok(tmp2, "/");
-			if (path == NULL)
-			{
-				/*
-				 * If we have only one token
-				 * i.e. i < 2 (bcoz loop 0 = token,
-				 * and loop 1 = NULL), then the cmd
-				 * is in '/ls' format which is incorect
-				 * so we return -1.
-				 */
-				if (i < 2)
-				{
-					free(paths);
-					free(tmp_tmp2);
-					return (-1);
-				}
-				/*
-				 * Means the cmd is in '/bin/ls' format
-				 * NOTE: just using '/ls' and '/bin/ls'
-				 * for example, it can be '/pwd'
-				 * and '/usr/bin/ls'
-				 */
-				cmd = tmp;
-				break;
-			}
-			else
-				/*
-				 * Saving path so that it can be used
-				 * in the next looping (i.e i++) when
-				 * path == NULL
-				 */
-				tmp = path;
-		}
-		free(tmp_tmp2);
-	}
-
-	tmp_tmp2 = paths;
+	tmp = paths;
 	for (i = 0; ; paths = NULL, i++)
 	{
 		path = strtok(paths, ":\n");
 
 		if (path == NULL)
 			break;
-
 		dir = opendir(path);
 		if (dir == NULL)
 		{
 			perror(arg1);
-			free(tmp_tmp2);
+			free(tmp);
 			return (-1);
 		}
 
@@ -175,16 +147,14 @@ int search_path(char *cmd)
 			file = readdir(dir);
 			if (file != NULL && strcmp(file->d_name, cmd) == 0)
 			{
-				strcat(path, "/");
-				strcat(path, cmd);
-				strcpy(av[0], path);
-
 				cstatus = closedir(dir);
 				if (cstatus == -1)
 					perror(arg1);
-				free(tmp_tmp2);
+				free(tmp);
+				strcat(path, "/");
+				strcpy(buf, path);
 
-				return (0);
+				return (1);
 			}
 		} while (file != NULL);
 
@@ -195,6 +165,127 @@ int search_path(char *cmd)
 			break;
 		}
 	}
-	free(tmp_tmp2);
+	free(tmp);
 	return (-1);
+}
+
+
+/**
+ * split_cmd_and_path - splits str into cmd and path
+ * @cmd: command
+ * @path: path
+ * @str: string
+ *
+ * Return: 0 if no need for splitting, 1 if splitted
+ */
+int split_cmd_and_path(char *str, char cmd[], char path[])
+{
+	unsigned int slen;
+	int tmp = 0;
+
+	slen = strlen(str);
+	for (; slen > 0; slen--)
+	{
+		if (str[slen] == '/')
+		{
+			tmp = 1;
+			/* To count out '/' */
+			slen++;
+			break;
+		}
+	}
+	if (tmp == 0)
+	{
+		return(0);
+	}
+	strcpy(cmd, str + slen);
+	strncpy(path, str, slen);
+	path[slen] = '\0'; /* Setting the last '/' to '\0' */
+
+	return (1);
+}
+
+
+
+/**
+ * search_cmd_in_path - searches a cmd in path
+ * @cmd: command
+ * @path: path
+ *
+ * Return: 1 if present, else -1
+ */
+int search_cmd_in_path(char *cmd, char *path)
+{
+	struct dirent *file;
+	DIR *dir;
+	int cstatus;
+
+	dir = opendir(path);
+	if (dir == NULL)
+	{
+		perror(arg1);
+		return (-1);
+	}
+	do {
+		file = readdir(dir);
+		if (file != NULL && strcmp(file->d_name, cmd) == 0)
+		{
+			cstatus = closedir(dir);
+			if (cstatus == -1)
+				perror(arg1);
+			return (1);
+		}
+	} while (file != NULL);
+
+	cstatus = closedir(dir);
+	if (cstatus == -1)
+		perror(arg1);
+	return (-1);
+}
+
+/**
+ * expand_path - expanding the '..' in a pathname
+ * @path: path
+ *
+ * Return: expanded path
+ *
+ * Description: we're only considering '..' here bcoz '.'
+ * is almost of no use in a path name
+ */
+char *expand_path(char *path)
+{
+	unsigned int i, goback = 0;
+	char *tmp;
+
+	if (path == NULL)
+		return (NULL);
+	for (i = 0; i < strlen(path); i++)
+	{
+		if (path[i] == '.')
+		{
+			if (path[i + 1] == '.' && (path[i + 2] == '/' || path[i + 2] == '\0'))
+				goback++;
+		}
+	}
+	if (goback == 0)
+		return (path);
+	if (getcwd(path, 500) == NULL)
+	{
+		perror(arg1);
+		return(NULL);
+	}	
+	for (; goback > 0; goback--)
+	{
+		tmp = rindex(path, '/');
+		if (tmp == NULL)
+			break;
+		i = 0;
+		while (tmp[i])
+		{
+			tmp[i] = '\0';
+			i++;
+		}
+	}
+	strcat(path, "/");
+	return (path);
 }
